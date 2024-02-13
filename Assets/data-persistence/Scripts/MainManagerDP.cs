@@ -1,7 +1,5 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,15 +7,31 @@ using UnityEngine.UI;
 public class MainManagerDP : MonoBehaviour
 {
     public Brick BrickPrefab;
-    private const int LineCount = 6;
+    public int LineCount = 6;
     public Rigidbody Ball;
 
-    public MainUIHandler mainUIHandler;
+    public Text BestScoreText;
+    public Text ScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
+    private int m_Points;
+    
     private bool m_GameOver = false;
 
+    public static MainManagerDP Instance;
+
+    private void Awake() {
+        if(Instance != null) {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        GameManagerDP.Instance.LoadGameInfo();
+        BestScoreText.text = "Best Score : " + GameManagerDP.Instance.bestName + " : " + GameManagerDP.Instance.bestScore;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -33,7 +47,7 @@ public class MainManagerDP : MonoBehaviour
                 Vector3 position = new Vector3(-1.5f + step * x, 2.5f + i * 0.3f, 0);
                 var brick = Instantiate(BrickPrefab, position, Quaternion.identity);
                 brick.PointValue = pointCountArray[i];
-                brick.onDestroyed.AddListener(mainUIHandler.AddPoint);
+                brick.onDestroyed.AddListener(AddPoint);
             }
         }
     }
@@ -45,7 +59,7 @@ public class MainManagerDP : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 m_Started = true;
-                float randomDirection = UnityEngine.Random.Range(-1.0f, 1.0f);
+                float randomDirection = Random.Range(-1.0f, 1.0f);
                 Vector3 forceDir = new Vector3(randomDirection, 1, 0);
                 forceDir.Normalize();
 
@@ -62,20 +76,16 @@ public class MainManagerDP : MonoBehaviour
         }
     }
 
-    public void GameOver()
+    void AddPoint(int point)
     {
-        m_GameOver = true;
-        GameOverText.SetActive(true);
-        if(mainUIHandler.m_Points > Manager.Instance.player.score){
-            Manager.Instance.player.score = mainUIHandler.m_Points;
-            mainUIHandler.SetBestPlayerInformation(Manager.Instance.player.name, Manager.Instance.player.score);
-        }
-        
-
-        
+        m_Points += point;
+        ScoreText.text = $"Score : {m_Points}";
     }
 
-
-
-    
+    public void GameOver()
+    {
+        GameManagerDP.Instance.SetBestScore(m_Points);
+        m_GameOver = true;
+        GameOverText.SetActive(true);
+    }
 }
